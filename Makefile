@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-g -Wall -DZCOPYSOCKET_PYTHON
-INCL=-I$(shell pwd) -lpython3.8 -I/usr/include/python3.8
+CFLAGS=-g -Wall 
+INCL=-I$(shell pwd) 
 
 BUILDIR=.
 
