@@ -7,10 +7,10 @@
 #include <arpa/inet.h>
 #include <linux/errqueue.h>
 
-struct _zcopy_private;
-struct _zcopy_private_msgbuf;
+struct zcopy_private;
+struct zcopy_private_msgbuf;
 
-struct _zcopy_private_msgbuf {
+struct zcopy_private_msgbuf {
     struct msghdr msg;
 
     struct cmsghdr cmsg;
@@ -18,17 +18,15 @@ struct _zcopy_private_msgbuf {
     unsigned char extra[256];
 };
 
-struct _zcopy_private {
-    uint32_t writes_queued;
-    const void *buffer_queued;
-
+struct zcopy_private {
     int error;
     char error_context[256];
+    uint32_t writes_queued;
 };
 
-void zcopy_private_init(struct _zcopy_private *priv);
-void zcopy_private_msgbuf_init(struct _zcopy_private_msgbuf *msgbuf);
+void zcopy_private_init(struct zcopy_private *priv);
+void zcopy_private_msgbuf_init(struct zcopy_private_msgbuf *msgbuf);
 
-void zcopy_private_seterror(struct _zcopy_private *priv, int error, const char *context);
+void zcopy_private_seterror(struct zcopy_private *priv, int error, const char *context);
 
 #endif

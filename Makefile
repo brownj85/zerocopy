@@ -1,6 +1,9 @@
 CC=gcc
 CFLAGS=-g -Wall -DZCOPYSOCKET_PYTHON
 INCL=-I$(shell pwd) -lpython3.8 -I/usr/include/python3.8
+
+BUILDIR=.
+
 SRC=$(wildcard *.c)
 HDR=$(wildcard *.h)
 
@@ -14,7 +17,9 @@ $(BUILDIR)/%.o: %.c %.h
 $(BUILDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -fPIC $(INCL) -c $< -o $@
 
-
 $(BUILDIR)/lib$(SHARED_LIB_TARGET).so: $(OBJ)
 	echo $(OBJ)
 	$(CC) -shared -o $@ $^
+
+test: $(SRC)
+	$(CC) $^ -o $@

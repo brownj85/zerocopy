@@ -13,14 +13,21 @@
 #include "zcopy.h"
 #include "zcopy_private.h"
 
-int zCopySocket_init(struct zCopySocket *sock, int sockfd){
+int zCopySocket_init(struct zCopySocket *sock, int domain){
     int ret;
 
     memset(sock, 0, sizeof(*sock));
     zcopy_private_init(&sock->_priv);
     
-    sock->fd = sockfd;
+    if (domain != AF_INET6 && domain != AF_INET){
+        return EAFNOSUPPORT;
+    }
 
+    sock->fd = socket(domain, SOCK_STREAM, 0);
+    if (sock->fd == -1){
+        return errno;
+    }
+    
     ret = 1;
     ret = setsockopt(sock->fd, SOL_SOCKET, SO_ZEROCOPY, &ret, sizeof(ret));
     if (ret < 0){
@@ -28,6 +35,7 @@ int zCopySocket_init(struct zCopySocket *sock, int sockfd){
             return ENOTSUP; //Linux kernel uses not-standard error codes
         }
         return errno;
+        close(sock->fd);
     }
 
     return 0;
@@ -37,21 +45,16 @@ int zCopySocket_init(struct zCopySocket *sock, int sockfd){
 int zCopySocket_send(struct zCopySocket *sock, const void *buf, size_t len, int flags){
     ssize_t tmp;
 
-    if (sock->_priv.writes_queued != 0){
-        zcopy_private_seterror(&sock->_priv, 1, "Cannot send: a buffer is already queued on the socket");
-        return -1;
-    }
-
-    sock->_priv.writes_queued = 1;
-    sock->_priv.buffer_queued = buf;
-
     tmp = 0;
 
     tmp = send(sock->fd, buf, len, MSG_ZEROCOPY | flags);
     if (tmp < 0){
+        perror("send");
         zcopy_private_seterror(&sock->_priv, -errno, "send() call failed");
         return -1;
     }
+
+    sock->_priv.writes_queued += 1;
 
     return 0;
 }
@@ -59,7 +62,7 @@ int zCopySocket_send(struct zCopySocket *sock, const void *buf, size_t len, int 
 static int handle_message(struct zCopySocket *sock){
     ssize_t tmp;
     
-    struct _zcopy_private_msgbuf msgbuf;
+    struct zcopy_private_msgbuf msgbuf;
     struct msghdr *msg;
     struct cmsghdr *cmsg;
     struct sock_extended_err *serr;
@@ -110,7 +113,6 @@ int zCopySocket_drain(struct zCopySocket *sock, int timeout_ms){
 
     if (ret == 0){
         sock->_priv.writes_queued = 0;
-        sock->_priv.buffer_queued = NULL;
         zcopy_private_seterror(&sock->_priv, 0, NULL);
     }
 

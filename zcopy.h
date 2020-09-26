@@ -10,7 +10,7 @@
 
 struct zCopySocket {
     int fd;
-    struct _zcopy_private _priv;
+    struct zcopy_private _priv;
 };
 
 int zCopySocket_init(struct zCopySocket *sock, int socket);
